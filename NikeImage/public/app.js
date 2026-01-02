@@ -1,6 +1,9 @@
 // Configuration
 const CORS_PROXY = 'https://corsproxy.io/?';
-const HI_RES_TRANSFORM = 'f_webp,b_rgb:F4F4F4,q_80,h_2000,w_2000,c_pad,g_south,y_145';
+
+// Image settings (user-configurable)
+let selectedFormat = 'webp';  // webp, jpg, png
+let selectedBgColor = 'F4F4F4';  // hex color without #
 
 // List of Nike marketplaces to search (in order of priority)
 const MARKETPLACES = ['US', 'GB', 'EU', 'JP', 'CN', 'KR', 'AU', 'CA'];
@@ -19,6 +22,7 @@ const productSku = document.getElementById('productSku');
 const imageCount = document.getElementById('imageCount');
 const downloadAllBtn = document.getElementById('downloadAllBtn');
 const imageGallery = document.getElementById('imageGallery');
+const customColorPicker = document.getElementById('customColor');
 
 // State
 let currentProduct = null;
@@ -30,8 +34,53 @@ skuInput.addEventListener('keypress', (e) => {
 });
 downloadAllBtn.addEventListener('click', handleDownloadAll);
 
+// Format button listeners
+document.querySelectorAll('.format-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedFormat = btn.dataset.format;
+        // Refresh images if product is loaded
+        if (currentProduct) {
+            refreshImages();
+        }
+    });
+});
+
+// Color button listeners
+document.querySelectorAll('.color-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedBgColor = btn.dataset.color;
+        // Refresh images if product is loaded
+        if (currentProduct) {
+            refreshImages();
+        }
+    });
+});
+
+// Custom color picker listener
+customColorPicker.addEventListener('input', (e) => {
+    // Remove # and convert to uppercase
+    selectedBgColor = e.target.value.replace('#', '').toUpperCase();
+    // Deselect preset buttons
+    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+    // Refresh images if product is loaded
+    if (currentProduct) {
+        refreshImages();
+    }
+});
+
 /**
- * Transform a Nike image URL to high-resolution WebP format
+ * Get the current transformation string based on selected options
+ */
+function getTransformString() {
+    return `f_${selectedFormat},b_rgb:${selectedBgColor},q_80,h_2000,w_2000,c_pad,g_south,y_145`;
+}
+
+/**
+ * Transform a Nike image URL to high-resolution format with current settings
  */
 function transformToHighRes(imageUrl) {
     if (!imageUrl) return null;
@@ -39,12 +88,25 @@ function transformToHighRes(imageUrl) {
     // Match Nike CDN URL patterns and replace transformation segment
     const transformRegex = /\/a\/images\/[^\/]+\//;
     if (transformRegex.test(imageUrl)) {
-        let transformed = imageUrl.replace(transformRegex, `/a/images/${HI_RES_TRANSFORM}/`);
-        // Change extension to .webp
-        transformed = transformed.replace(/\.(png|jpg|jpeg)(\?.*)?$/i, '.webp');
+        let transformed = imageUrl.replace(transformRegex, `/a/images/${getTransformString()}/`);
+        // Change extension based on selected format
+        transformed = transformed.replace(/\.(png|jpg|jpeg|webp)(\?.*)?$/i, `.${selectedFormat}`);
         return transformed;
     }
     return imageUrl;
+}
+
+/**
+ * Refresh images with current format/color settings
+ */
+function refreshImages() {
+    if (!currentProduct || !currentProduct.rawImageUrls) return;
+
+    // Re-transform all images with new settings
+    currentProduct.images = currentProduct.rawImageUrls.map(url => transformToHighRes(url));
+
+    // Re-render the gallery
+    displayProduct(currentProduct);
 }
 
 /**
@@ -187,25 +249,27 @@ function formatThreadResponse(thread, sku) {
     const merchProduct = productInfo.merchProduct || {};
     const publishedContent = thread.publishedContent || {};
 
-    // Extract all images from published content
-    const images = [];
+    // Extract all RAW images from published content
+    const rawImages = [];
 
     // Get images from nodes (these are the high quality product shots)
     if (publishedContent.nodes) {
-        extractImagesFromNodes(publishedContent.nodes, images);
+        extractImagesFromNodes(publishedContent.nodes, rawImages);
     }
 
     // Get images from productInfo imageUrls
     if (productInfo.imageUrls) {
         Object.values(productInfo.imageUrls).forEach(url => {
             if (url && typeof url === 'string') {
-                images.push(transformToHighRes(url));
+                rawImages.push(url);
             }
         });
     }
 
-    // Dedupe images
-    const uniqueImages = [...new Set(images.filter(Boolean))];
+    // Dedupe raw images
+    const uniqueRawImages = [...new Set(rawImages.filter(Boolean))];
+    // Transform to current format/color settings
+    const transformedImages = uniqueRawImages.map(url => transformToHighRes(url));
 
     return {
         success: true,
@@ -215,27 +279,28 @@ function formatThreadResponse(thread, sku) {
         price: formatPrice(merchProduct.price, merchProduct.currentPrice),
         colorway: merchProduct.colorDescription || '',
         styleColor: merchProduct.styleColor || sku,
-        images: uniqueImages
+        rawImageUrls: uniqueRawImages,  // Store raw URLs for re-transformation
+        images: transformedImages
     };
 }
 
 /**
- * Recursively extract images from node tree
+ * Recursively extract RAW images from node tree
  */
 function extractImagesFromNodes(nodes, images) {
     if (!nodes || !Array.isArray(nodes)) return;
 
     nodes.forEach(node => {
-        // Check for image URLs in properties
+        // Check for image URLs in properties - store RAW URLs
         if (node.properties) {
             if (node.properties.squarishURL) {
-                images.push(transformToHighRes(node.properties.squarishURL));
+                images.push(node.properties.squarishURL);
             }
             if (node.properties.portraitURL) {
-                images.push(transformToHighRes(node.properties.portraitURL));
+                images.push(node.properties.portraitURL);
             }
             if (node.properties.landscapeURL) {
-                images.push(transformToHighRes(node.properties.landscapeURL));
+                images.push(node.properties.landscapeURL);
             }
         }
 
@@ -250,23 +315,23 @@ function extractImagesFromNodes(nodes, images) {
  * Format basic product response
  */
 function formatProductResponse(product, colorway = null) {
-    const images = [];
+    const rawImages = [];
 
-    // Get images from product
+    // Get RAW images from product
     if (product.images?.squarishURL) {
-        images.push(transformToHighRes(product.images.squarishURL));
+        rawImages.push(product.images.squarishURL);
     }
     if (product.images?.portraitURL) {
-        images.push(transformToHighRes(product.images.portraitURL));
+        rawImages.push(product.images.portraitURL);
     }
 
     // Get colorway images
     if (colorway) {
         if (colorway.images?.squarishURL) {
-            images.push(transformToHighRes(colorway.images.squarishURL));
+            rawImages.push(colorway.images.squarishURL);
         }
         if (colorway.images?.portraitURL) {
-            images.push(transformToHighRes(colorway.images.portraitURL));
+            rawImages.push(colorway.images.portraitURL);
         }
     }
 
@@ -274,18 +339,20 @@ function formatProductResponse(product, colorway = null) {
     if (product.colorways) {
         product.colorways.forEach(cw => {
             if (cw.images?.squarishURL) {
-                images.push(transformToHighRes(cw.images.squarishURL));
+                rawImages.push(cw.images.squarishURL);
             }
         });
     }
 
-    const uniqueImages = [...new Set(images.filter(Boolean))];
+    const uniqueRawImages = [...new Set(rawImages.filter(Boolean))];
+    const transformedImages = uniqueRawImages.map(url => transformToHighRes(url));
 
     return {
         success: true,
         sku: colorway?.styleColor || product.styleColor || product.productCode || '',
         name: product.title || product.subtitle || 'Unknown Product',
         subtitle: product.subtitle || '',
+        rawImageUrls: uniqueRawImages,  // Store raw URLs for re-transformation
         price: formatPrice(product.price, product.currentPrice),
         colorway: colorway?.colorDescription || product.colorDescription || '',
         styleColor: colorway?.styleColor || product.styleColor || '',
@@ -344,8 +411,8 @@ function createImageCard(imageUrl, number, total) {
     const card = document.createElement('div');
     card.className = 'image-card';
 
-    const format = imageUrl.includes('.webp') ? 'WEBP' :
-        imageUrl.includes('.png') ? 'PNG' : 'JPG';
+    // Use the selected format (uppercase for display)
+    const format = selectedFormat.toUpperCase();
 
     // Truncate URL for display (show first 40 and last 20 chars)
     const displayUrl = imageUrl.length > 70

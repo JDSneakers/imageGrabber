@@ -180,6 +180,40 @@ body {
     border-radius: 6px;
 }
 
+/* Offset Input */
+.offset-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.offset-input {
+    width: 70px;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.85rem;
+    font-family: inherit;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.offset-input:focus {
+    outline: none;
+    border-color: var(--text-secondary);
+}
+
+.offset-input::-webkit-inner-spin-button,
+.offset-input::-webkit-outer-spin-button {
+    opacity: 1;
+}
+
+.offset-unit {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
 .search-box {
     display: flex;
     gap: 0.75rem;

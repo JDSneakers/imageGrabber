@@ -4,6 +4,7 @@ const CORS_PROXY = 'https://corsproxy.io/?';
 // Image settings (user-configurable)
 let selectedFormat = 'webp';  // webp, jpg, png
 let selectedBgColor = 'F4F4F4';  // hex color without #
+let yOffset = 145;  // vertical offset in pixels
 
 // List of Nike marketplaces to search (in order of priority)
 const MARKETPLACES = ['US', 'GB', 'EU', 'JP', 'CN', 'KR', 'AU', 'CA'];
@@ -23,6 +24,7 @@ const imageCount = document.getElementById('imageCount');
 const downloadAllBtn = document.getElementById('downloadAllBtn');
 const imageGallery = document.getElementById('imageGallery');
 const customColorPicker = document.getElementById('customColor');
+const yOffsetInput = document.getElementById('yOffsetInput');
 
 // State
 let currentProduct = null;
@@ -72,11 +74,23 @@ customColorPicker.addEventListener('input', (e) => {
     }
 });
 
+// Y offset input listener
+yOffsetInput.addEventListener('input', (e) => {
+    // Clamp value between 0 and 500
+    let value = parseInt(e.target.value) || 0;
+    value = Math.max(0, Math.min(500, value));
+    yOffset = value;
+    // Refresh images if product is loaded
+    if (currentProduct) {
+        refreshImages();
+    }
+});
+
 /**
  * Get the current transformation string based on selected options
  */
 function getTransformString() {
-    return `f_${selectedFormat},b_rgb:${selectedBgColor},q_80,h_2000,w_2000,c_pad,g_south,y_145`;
+    return `f_${selectedFormat},b_rgb:${selectedBgColor},q_80,h_2000,w_2000,c_pad,g_south,y_${yOffset}`;
 }
 
 /**

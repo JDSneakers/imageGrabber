@@ -30,6 +30,33 @@
                 </button>
             </div>
             <p class="search-hint">Try: DV0833-105, CW2288-111, DD1391-100</p>
+
+            <!-- Image Options -->
+            <div class="image-options">
+                <div class="option-group">
+                    <label class="option-label">Format</label>
+                    <div class="format-buttons">
+                        <button class="format-btn active" data-format="webp">WebP</button>
+                        <button class="format-btn" data-format="jpg">JPG</button>
+                        <button class="format-btn" data-format="png">PNG</button>
+                    </div>
+                </div>
+                <div class="option-group">
+                    <label class="option-label">Background</label>
+                    <div class="color-options">
+                        <div class="color-option">
+                            <button class="color-btn active" data-color="F4F4F4" title="Default"
+                                style="background-color: #F4F4F4;"></button>
+                            <span class="color-label">Default</span>
+                        </div>
+                        <div class="color-option">
+                            <input type="color" id="customColor" class="color-picker" value="#F4F4F4"
+                                title="Custom Color">
+                            <span class="color-label">Custom</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div id="loading" class="loading hidden">

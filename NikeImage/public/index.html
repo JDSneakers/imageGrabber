@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nike SKU Image Fetcher</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Nike SKU Image Fetcher</h1>
+            <p class="subtitle">Enter a product SKU to fetch all available images</p>
+        </header>
+
+        <div class="search-section">
+            <div class="search-box">
+                <input type="text" id="skuInput" placeholder="Enter SKU (e.g., DV0833-105)" autocomplete="off">
+                <button id="searchBtn" class="btn-search">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="M21 21l-4.35-4.35"></path>
+                    </svg>
+                    Search
+                </button>
+            </div>
+            <p class="search-hint">Try: DV0833-105, CW2288-111, DD1391-100</p>
+        </div>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Fetching product data from Nike...</p>
+        </div>
+
+        <div id="error" class="error hidden"></div>
+
+        <div id="productInfo" class="product-info hidden">
+            <div class="product-header">
+                <div class="product-details">
+                    <h2 id="productName" class="product-name"></h2>
+                    <p id="productSubtitle" class="product-subtitle"></p>
+                    <div class="product-meta">
+                        <span id="productPrice" class="product-price"></span>
+                        <span id="productColorway" class="product-colorway"></span>
+                        <span id="productSku" class="product-sku"></span>
+                    </div>
+                </div>
+                <button id="downloadAllBtn" class="btn-download-all">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download All (ZIP)
+                </button>
+            </div>
+            <p id="imageCount" class="image-count"></p>
+        </div>
+
+        <div id="imageGallery" class="image-gallery hidden"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>

@@ -68,16 +68,23 @@ body {
 /* Image Options */
 .image-options {
     display: flex;
-    justify-content: center;
-    gap: 2rem;
+    flex-direction: column;
+    gap: 1rem;
     margin-top: 1.5rem;
-    padding: 1rem 1.5rem;
+    padding: 1.25rem 1.5rem;
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: 10px;
-    max-width: 500px;
+    max-width: 600px;
     margin-left: auto;
     margin-right: auto;
+}
+
+.options-row {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
 }
 
 .option-group {
@@ -211,6 +218,70 @@ body {
 
 .offset-unit {
     font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Transparent Button */
+.transparent-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(45deg, #ccc 25%, transparent 25%),
+        linear-gradient(-45deg, #ccc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ccc 75%),
+        linear-gradient(-45deg, transparent 75%, #ccc 75%);
+    background-size: 8px 8px;
+    background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+    background-color: #fff;
+}
+
+.transparent-btn svg {
+    display: none;
+}
+
+/* Dimension Inputs */
+.dimension-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dimension-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.dimension-input {
+    width: 65px;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.85rem;
+    font-family: inherit;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.dimension-input:focus {
+    outline: none;
+    border-color: var(--text-secondary);
+}
+
+.dimension-input::-webkit-inner-spin-button,
+.dimension-input::-webkit-outer-spin-button {
+    opacity: 1;
+}
+
+.dimension-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.dimension-separator {
+    font-size: 0.9rem;
     color: var(--text-muted);
 }
 
@@ -576,5 +647,31 @@ body {
     .image-gallery {
         grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
         gap: 1rem;
+    }
+
+    .image-options {
+        padding: 1rem;
+    }
+
+    .options-row {
+        gap: 1rem;
+        justify-content: space-around;
+    }
+
+    .option-group {
+        min-width: 0;
+    }
+
+    .dimension-inputs {
+        flex-wrap: wrap;
+        gap: 0.375rem;
+    }
+
+    .dimension-input {
+        width: 55px;
+    }
+
+    .offset-input {
+        width: 60px;
     }
 }

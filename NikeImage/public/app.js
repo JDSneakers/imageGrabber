@@ -3,8 +3,11 @@ const CORS_PROXY = 'https://corsproxy.io/?';
 
 // Image settings (user-configurable)
 let selectedFormat = 'webp';  // webp, jpg, png
-let selectedBgColor = 'F4F4F4';  // hex color without #
+let selectedBgColor = 'F4F4F4';  // hex color without # or 'transparent'
+let isTransparent = false;  // transparent background mode
 let yOffset = 145;  // vertical offset in pixels
+let imageWidth = 2000;  // image width
+let imageHeight = 2000;  // image height
 
 // List of Nike marketplaces to search (in order of priority)
 const MARKETPLACES = ['US', 'GB', 'EU', 'JP', 'CN', 'KR', 'AU', 'CA'];
@@ -25,6 +28,8 @@ const downloadAllBtn = document.getElementById('downloadAllBtn');
 const imageGallery = document.getElementById('imageGallery');
 const customColorPicker = document.getElementById('customColor');
 const yOffsetInput = document.getElementById('yOffsetInput');
+const widthInput = document.getElementById('widthInput');
+const heightInput = document.getElementById('heightInput');
 
 // State
 let currentProduct = null;
@@ -49,12 +54,23 @@ document.querySelectorAll('.format-btn').forEach(btn => {
     });
 });
 
-// Color button listeners
+// Color button listeners (including transparent)
 document.querySelectorAll('.color-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        selectedBgColor = btn.dataset.color;
+
+        if (btn.dataset.color === 'transparent') {
+            isTransparent = true;
+            // Auto-select PNG for transparent backgrounds
+            document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('.format-btn[data-format="png"]').classList.add('active');
+            selectedFormat = 'png';
+        } else {
+            isTransparent = false;
+            selectedBgColor = btn.dataset.color;
+        }
+
         // Refresh images if product is loaded
         if (currentProduct) {
             refreshImages();
@@ -66,6 +82,7 @@ document.querySelectorAll('.color-btn').forEach(btn => {
 customColorPicker.addEventListener('input', (e) => {
     // Remove # and convert to uppercase
     selectedBgColor = e.target.value.replace('#', '').toUpperCase();
+    isTransparent = false;
     // Deselect preset buttons
     document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
     // Refresh images if product is loaded
@@ -86,11 +103,35 @@ yOffsetInput.addEventListener('input', (e) => {
     }
 });
 
+// Width input listener
+widthInput.addEventListener('input', (e) => {
+    let value = parseInt(e.target.value) || 100;
+    value = Math.max(100, Math.min(4000, value));
+    imageWidth = value;
+    if (currentProduct) {
+        refreshImages();
+    }
+});
+
+// Height input listener
+heightInput.addEventListener('input', (e) => {
+    let value = parseInt(e.target.value) || 100;
+    value = Math.max(100, Math.min(4000, value));
+    imageHeight = value;
+    if (currentProduct) {
+        refreshImages();
+    }
+});
+
 /**
  * Get the current transformation string based on selected options
  */
 function getTransformString() {
-    return `f_${selectedFormat},b_rgb:${selectedBgColor},q_80,h_2000,w_2000,c_pad,g_south,y_${yOffset}`;
+    if (isTransparent) {
+        // For transparent: use f_png (or f_auto) and no background
+        return `f_png,q_auto,h_${imageHeight},w_${imageWidth},c_pad,g_south,y_${yOffset}`;
+    }
+    return `f_${selectedFormat},b_rgb:${selectedBgColor},q_80,h_${imageHeight},w_${imageWidth},c_pad,g_south,y_${yOffset}`;
 }
 
 /**
@@ -449,7 +490,7 @@ function createImageCard(imageUrl, number, total) {
         </div>
         <div class="image-info">
             <span class="image-number">Image ${number} of ${total}</span>
-            <span class="image-format">${format} - 2000x2000</span>
+            <span class="image-format">${format} - ${imageWidth}x${imageHeight}</span>
         </div>
         <div class="image-url-container">
             <input type="text" class="image-url-input" value="${imageUrl}" readonly>

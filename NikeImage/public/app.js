@@ -1,7 +1,10 @@
 // Configuration
 const CORS_PROXY = 'https://corsproxy.io/?';
 
-// Image settings (user-configurable)
+// Current brand state
+let currentBrand = 'nike';
+
+// Nike Image settings (user-configurable)
 let selectedFormat = 'webp';  // webp, jpg, png
 let selectedBgColor = 'F4F4F4';  // hex color without # or 'transparent'
 let isTransparent = false;  // transparent background mode
@@ -9,13 +12,20 @@ let yOffset = 145;  // vertical offset in pixels
 let imageWidth = 2000;  // image width
 let imageHeight = 2000;  // image height
 
+// Vans settings
+let vansMaxImages = 7;  // max number of images to try (HERO + ALT1-ALTn)
+let vansWidth = 2000;
+let vansHeight = 2000;
+let vansSelectedFormat = 'png';  // png or webp for downloads
+
 // List of Nike marketplaces to search (in order of priority)
 const MARKETPLACES = ['US', 'GB', 'EU', 'JP', 'CN', 'KR', 'AU', 'CA'];
 
-// DOM Elements
+// DOM Elements - Nike
 const skuInput = document.getElementById('skuInput');
 const searchBtn = document.getElementById('searchBtn');
 const loading = document.getElementById('loading');
+const loadingText = document.getElementById('loadingText');
 const error = document.getElementById('error');
 const productInfo = document.getElementById('productInfo');
 const productName = document.getElementById('productName');
@@ -31,17 +41,87 @@ const yOffsetInput = document.getElementById('yOffsetInput');
 const widthInput = document.getElementById('widthInput');
 const heightInput = document.getElementById('heightInput');
 
+// DOM Elements - Vans
+const vansSkuInput = document.getElementById('vansSkuInput');
+const vansSearchBtn = document.getElementById('vansSearchBtn');
+const vansMaxImagesInput = document.getElementById('vansMaxImages');
+const vansWidthInput = document.getElementById('vansWidthInput');
+const vansHeightInput = document.getElementById('vansHeightInput');
+
+// DOM Elements - Tabs
+const tabBtns = document.querySelectorAll('.tab-btn');
+const nikeTab = document.getElementById('nikeTab');
+const vansTab = document.getElementById('vansTab');
+
 // State
 let currentProduct = null;
 
-// Event Listeners
-searchBtn.addEventListener('click', handleSearch);
+// Tab switching
+tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const brand = btn.dataset.brand;
+        if (brand === currentBrand) return;
+
+        // Update tab buttons
+        tabBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update tab content
+        currentBrand = brand;
+        nikeTab.classList.toggle('active', brand === 'nike');
+        vansTab.classList.toggle('active', brand === 'vans');
+
+        // Clear current results when switching
+        hideError();
+        hideProductInfo();
+        hideGallery();
+        currentProduct = null;
+    });
+});
+
+// Event Listeners - Nike
+searchBtn.addEventListener('click', handleNikeSearch);
 skuInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleSearch();
+    if (e.key === 'Enter') handleNikeSearch();
 });
 downloadAllBtn.addEventListener('click', handleDownloadAll);
 
-// Format button listeners
+// Event Listeners - Vans
+vansSearchBtn.addEventListener('click', handleVansSearch);
+vansSkuInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleVansSearch();
+});
+
+// Vans settings listeners
+vansMaxImagesInput.addEventListener('input', (e) => {
+    let value = parseInt(e.target.value) || 7;
+    value = Math.max(1, Math.min(20, value));
+    vansMaxImages = value;
+});
+
+vansWidthInput.addEventListener('input', (e) => {
+    let value = parseInt(e.target.value) || 2000;
+    value = Math.max(100, Math.min(4000, value));
+    vansWidth = value;
+});
+
+vansHeightInput.addEventListener('input', (e) => {
+    let value = parseInt(e.target.value) || 2000;
+    value = Math.max(100, Math.min(4000, value));
+    vansHeight = value;
+});
+
+// Vans format button listeners
+const vansFormatBtns = document.querySelectorAll('#vansFormatButtons .format-btn');
+vansFormatBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        vansFormatBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        vansSelectedFormat = btn.dataset.format;
+    });
+});
+
+// Format button listeners (Nike)
 document.querySelectorAll('.format-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
@@ -165,9 +245,9 @@ function refreshImages() {
 }
 
 /**
- * Handle search button click
+ * Handle Nike search button click
  */
-async function handleSearch() {
+async function handleNikeSearch() {
     const sku = skuInput.value.trim().toUpperCase();
 
     if (!sku) {
@@ -179,6 +259,7 @@ async function handleSearch() {
     hideError();
     hideProductInfo();
     hideGallery();
+    loadingText.textContent = 'Fetching product data from Nike...';
     showLoading();
 
     try {
@@ -203,6 +284,131 @@ async function handleSearch() {
         showError('Failed to fetch product data. Please try again.');
         console.error(err);
     }
+}
+
+/**
+ * Handle Vans search button click
+ */
+async function handleVansSearch() {
+    const sku = vansSkuInput.value.trim().toUpperCase();
+
+    if (!sku) {
+        showError('Please enter a Vans SKU');
+        return;
+    }
+
+    // Reset UI
+    hideError();
+    hideProductInfo();
+    hideGallery();
+    loadingText.textContent = 'Fetching images from Vans...';
+    showLoading();
+
+    try {
+        const product = await fetchVansImages(sku);
+        hideLoading();
+
+        if (!product || !product.images || product.images.length === 0) {
+            showError('No images found for Vans SKU: ' + sku);
+            return;
+        }
+
+        currentProduct = product;
+        displayProduct(product);
+
+    } catch (err) {
+        hideLoading();
+        showError('Failed to fetch Vans images. Please check the SKU and try again.');
+        console.error(err);
+    }
+}
+
+/**
+ * Build Vans CDN URL for a given SKU and image type
+ * Uses simplified URL pattern that works with v1 version
+ */
+function buildVansImageUrl(sku, imageType) {
+    // Simplified pattern: https://assets.vans.com/images/v1/{SKU}-{TYPE}/image.png
+    // This works for most modern Vans SKUs (VN000 prefix)
+    // Full transformation version for high quality:
+    return `https://assets.vans.com/images/t_img/c_fill,g_center,f_auto,h_${vansHeight},e_unsharp_mask:100,w_${vansWidth}/dpr_2.0/v1/${sku}-${imageType}/image.png`;
+}
+
+/**
+ * Check if an image URL exists by trying to load it
+ * Uses direct image loading which works for Vans CDN
+ */
+async function checkImageExists(url) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+
+        // Reduced timeout for faster failure detection
+        const timeout = setTimeout(() => {
+            img.src = '';
+            resolve(false);
+        }, 2000);
+
+        img.onload = () => {
+            clearTimeout(timeout);
+            resolve(true);
+        };
+
+        img.onerror = () => {
+            clearTimeout(timeout);
+            resolve(false);
+        };
+
+        // Load image directly (Vans CDN supports CORS for images)
+        img.src = url;
+    });
+}
+
+/**
+ * Fetch Vans images by SKU using parallel checking for speed
+ */
+async function fetchVansImages(sku) {
+    const imageTypes = ['HERO'];
+    // Add ALT1 through ALT(maxImages-1) since HERO counts as one
+    for (let i = 1; i < vansMaxImages; i++) {
+        imageTypes.push(`ALT${i}`);
+    }
+
+    // Build all URLs upfront
+    const urlsToCheck = imageTypes.map(type => ({
+        type,
+        url: buildVansImageUrl(sku, type)
+    }));
+
+    // Check all images in parallel for speed
+    const results = await Promise.all(
+        urlsToCheck.map(async ({ type, url }) => {
+            const exists = await checkImageExists(url);
+            return { type, url, exists };
+        })
+    );
+
+    // Collect valid images
+    const validImages = results
+        .filter(r => r.exists)
+        .map(r => r.url);
+
+    if (validImages.length === 0) {
+        return null;
+    }
+
+    return {
+        success: true,
+        sku: sku,
+        name: `Vans ${sku}`,
+        subtitle: '',
+        price: '',
+        colorway: '',
+        styleColor: sku,
+        rawImageUrls: validImages,
+        images: validImages,
+        brand: 'vans'
+    };
 }
 
 /**
@@ -432,20 +638,24 @@ function displayProduct(product) {
     // Update product info
     productName.textContent = product.name;
     productSubtitle.textContent = product.subtitle || '';
-    productPrice.textContent = product.price;
+    productPrice.textContent = product.price || '';
     productColorway.textContent = product.colorway || '';
     productSku.textContent = product.styleColor || product.sku;
 
-    // Show marketplace if not US
+    // Show marketplace if not US (Nike only)
     let countText = `${product.images.length} image${product.images.length !== 1 ? 's' : ''} found`;
     if (product.marketplace && product.marketplace !== 'US') {
         countText += ` (from ${product.marketplace} region)`;
+    }
+    if (product.brand === 'vans') {
+        countText += ' (Vans CDN)';
     }
     imageCount.textContent = countText;
 
     // Hide empty elements
     productSubtitle.style.display = product.subtitle ? 'block' : 'none';
     productColorway.style.display = product.colorway ? 'inline' : 'none';
+    productPrice.style.display = product.price ? 'inline' : 'none';
 
     // Build image gallery
     imageGallery.innerHTML = '';
@@ -466,8 +676,17 @@ function createImageCard(imageUrl, number, total) {
     const card = document.createElement('div');
     card.className = 'image-card';
 
-    // Use the selected format (uppercase for display)
-    const format = selectedFormat.toUpperCase();
+    // Determine format and dimensions based on current brand
+    let format, width, height;
+    if (currentBrand === 'vans') {
+        format = vansSelectedFormat.toUpperCase();  // Show selected download format
+        width = vansWidth;
+        height = vansHeight;
+    } else {
+        format = selectedFormat.toUpperCase();
+        width = imageWidth;
+        height = imageHeight;
+    }
 
     // Truncate URL for display (show first 40 and last 20 chars)
     const displayUrl = imageUrl.length > 70
@@ -490,7 +709,7 @@ function createImageCard(imageUrl, number, total) {
         </div>
         <div class="image-info">
             <span class="image-number">Image ${number} of ${total}</span>
-            <span class="image-format">${format} - ${imageWidth}x${imageHeight}</span>
+            <span class="image-format">${format} - ${width}x${height}</span>
         </div>
         <div class="image-url-container">
             <input type="text" class="image-url-input" value="${imageUrl}" readonly>
@@ -549,24 +768,76 @@ async function copyToClipboard(text, button) {
 
 /**
  * Download a single image
+ * Uses canvas approach for Vans (CORS proxy blocked), fetch for Nike
  */
 async function downloadImage(url, index) {
+    // For Vans images, use canvas-based download with selected format
+    if (currentBrand === 'vans') {
+        const format = vansSelectedFormat;
+        const filename = `${currentProduct.styleColor || currentProduct.sku}_${index}.${format}`;
+        try {
+            const blob = await downloadViaCanvas(url, format);
+            if (blob) {
+                saveAs(blob, filename);
+                return;
+            }
+        } catch (err) {
+            console.error('Canvas download failed:', err);
+        }
+        // Fallback: open in new tab for manual save
+        window.open(url, '_blank');
+        return;
+    }
+
+    // For Nike, use CORS proxy with original format
+    const extension = url.includes('.webp') ? 'webp' :
+        url.includes('.png') ? 'png' : 'jpg';
+    const filename = `${currentProduct.styleColor || currentProduct.sku}_${index}.${extension}`;
+
+    // For Nike, use CORS proxy
     try {
-        // Use CORS proxy for downloading
         const response = await fetch(CORS_PROXY + encodeURIComponent(url));
         const blob = await response.blob();
-
-        const extension = url.includes('.webp') ? 'webp' :
-            url.includes('.png') ? 'png' : 'jpg';
-
-        const filename = `${currentProduct.styleColor || currentProduct.sku}_${index}.${extension}`;
-
         saveAs(blob, filename);
     } catch (err) {
         console.error('Download failed:', err);
         // Fallback: open in new tab
         window.open(url, '_blank');
     }
+}
+
+/**
+ * Download image via canvas (works for Vans CDN which allows image loading but not fetch)
+ */
+async function downloadViaCanvas(url, format = 'png') {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        resolve(blob);
+                    } else {
+                        reject(new Error('Canvas toBlob failed'));
+                    }
+                }, `image/${format === 'jpg' ? 'jpeg' : format}`);
+            } catch (err) {
+                reject(err);
+            }
+        };
+
+        img.onerror = () => reject(new Error('Image load failed'));
+        img.src = url;
+    });
 }
 
 /**
@@ -589,14 +860,24 @@ async function handleDownloadAll() {
         // Fetch all images
         const fetchPromises = currentProduct.images.map(async (url, index) => {
             try {
-                const response = await fetch(CORS_PROXY + encodeURIComponent(url));
-                const blob = await response.blob();
+                let extension, blob;
 
-                const extension = url.includes('.webp') ? 'webp' :
-                    url.includes('.png') ? 'png' : 'jpg';
+                // Use canvas for Vans with selected format, fetch for Nike
+                if (currentBrand === 'vans') {
+                    extension = vansSelectedFormat;
+                    blob = await downloadViaCanvas(url, extension);
+                } else {
+                    extension = url.includes('.webp') ? 'webp' :
+                        url.includes('.png') ? 'png' : 'jpg';
+                    const response = await fetch(CORS_PROXY + encodeURIComponent(url));
+                    blob = await response.blob();
+                }
 
                 const filename = `${currentProduct.styleColor || currentProduct.sku}_${index + 1}.${extension}`;
-                folder.file(filename, blob);
+
+                if (blob && blob.size > 0) {
+                    folder.file(filename, blob);
+                }
             } catch (err) {
                 console.error(`Failed to fetch image ${index + 1}:`, err);
             }

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nike SKU Image Fetcher</title>
+    <title>Shoe Image Grabber</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -14,94 +14,164 @@
 <body>
     <div class="container">
         <header class="header">
-            <h1>Nike SKU Image Fetcher</h1>
+            <h1>Shoe Image Grabber</h1>
             <p class="subtitle">Enter a product SKU to fetch all available images</p>
         </header>
 
-        <div class="search-section">
-            <div class="search-box">
-                <input type="text" id="skuInput" placeholder="Enter SKU (e.g., DV0833-105)" autocomplete="off">
-                <button id="searchBtn" class="btn-search">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="M21 21l-4.35-4.35"></path>
-                    </svg>
-                    Search
-                </button>
-            </div>
-            <p class="search-hint">Try: DV0833-105, CW2288-111, DD1391-100</p>
+        <!-- Brand Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" data-brand="nike">Nike</button>
+            <button class="tab-btn" data-brand="vans">Vans</button>
+        </div>
 
-            <!-- Image Options -->
-            <div class="image-options">
-                <div class="options-row">
-                    <div class="option-group">
-                        <label class="option-label">Format</label>
-                        <div class="format-buttons">
-                            <button class="format-btn active" data-format="webp">WebP</button>
-                            <button class="format-btn" data-format="jpg">JPG</button>
-                            <button class="format-btn" data-format="png">PNG</button>
-                        </div>
-                    </div>
-                    <div class="option-group">
-                        <label class="option-label">Background</label>
-                        <div class="color-options">
-                            <div class="color-option">
-                                <button class="color-btn active" data-color="F4F4F4" title="Default"
-                                    style="background-color: #F4F4F4;"></button>
-                                <span class="color-label">Default</span>
-                            </div>
-                            <div class="color-option">
-                                <button class="color-btn transparent-btn" data-color="transparent" title="Transparent">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <rect x="3" y="3" width="7" height="7" fill="#ccc"></rect>
-                                        <rect x="10" y="3" width="7" height="7" fill="#fff"></rect>
-                                        <rect x="3" y="10" width="7" height="7" fill="#fff"></rect>
-                                        <rect x="10" y="10" width="7" height="7" fill="#ccc"></rect>
-                                    </svg>
-                                </button>
-                                <span class="color-label">None</span>
-                            </div>
-                            <div class="color-option">
-                                <input type="color" id="customColor" class="color-picker" value="#F4F4F4"
-                                    title="Custom Color">
-                                <span class="color-label">Custom</span>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Nike Tab Content -->
+        <div id="nikeTab" class="tab-content active">
+            <div class="search-section">
+                <div class="search-box">
+                    <input type="text" id="skuInput" placeholder="Enter SKU (e.g., DV0833-105)" autocomplete="off">
+                    <button id="searchBtn" class="btn-search">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="M21 21l-4.35-4.35"></path>
+                        </svg>
+                        Search
+                    </button>
                 </div>
-                <div class="options-row">
-                    <div class="option-group">
-                        <label class="option-label">Dimensions</label>
-                        <div class="dimension-inputs">
-                            <div class="dimension-input-wrapper">
-                                <input type="number" id="widthInput" class="dimension-input" value="2000" min="100"
-                                    max="4000" step="100">
-                                <span class="dimension-label">W</span>
+                <p class="search-hint">Try: DV0833-105, CW2288-111, DD1391-100</p>
+
+                <!-- Image Options -->
+                <div class="image-options">
+                    <div class="options-row">
+                        <div class="option-group">
+                            <label class="option-label">Format</label>
+                            <div class="format-buttons">
+                                <button class="format-btn active" data-format="webp">WebP</button>
+                                <button class="format-btn" data-format="jpg">JPG</button>
+                                <button class="format-btn" data-format="png">PNG</button>
                             </div>
-                            <span class="dimension-separator">×</span>
-                            <div class="dimension-input-wrapper">
-                                <input type="number" id="heightInput" class="dimension-input" value="2000" min="100"
-                                    max="4000" step="100">
-                                <span class="dimension-label">H</span>
+                        </div>
+                        <div class="option-group">
+                            <label class="option-label">Background</label>
+                            <div class="color-options">
+                                <div class="color-option">
+                                    <button class="color-btn active" data-color="F4F4F4" title="Default"
+                                        style="background-color: #F4F4F4;"></button>
+                                    <span class="color-label">Default</span>
+                                </div>
+                                <div class="color-option">
+                                    <button class="color-btn transparent-btn" data-color="transparent"
+                                        title="Transparent">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="3" width="7" height="7" fill="#ccc"></rect>
+                                            <rect x="10" y="3" width="7" height="7" fill="#fff"></rect>
+                                            <rect x="3" y="10" width="7" height="7" fill="#fff"></rect>
+                                            <rect x="10" y="10" width="7" height="7" fill="#ccc"></rect>
+                                        </svg>
+                                    </button>
+                                    <span class="color-label">None</span>
+                                </div>
+                                <div class="color-option">
+                                    <input type="color" id="customColor" class="color-picker" value="#F4F4F4"
+                                        title="Custom Color">
+                                    <span class="color-label">Custom</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="option-group">
-                        <label class="option-label">Y Offset</label>
-                        <div class="offset-input-wrapper">
-                            <input type="number" id="yOffsetInput" class="offset-input" value="145" min="0" max="500"
-                                step="5">
-                            <span class="offset-unit">px</span>
+                    <div class="options-row">
+                        <div class="option-group">
+                            <label class="option-label">Dimensions</label>
+                            <div class="dimension-inputs">
+                                <div class="dimension-input-wrapper">
+                                    <input type="number" id="widthInput" class="dimension-input" value="2000" min="100"
+                                        max="4000" step="100">
+                                    <span class="dimension-label">W</span>
+                                </div>
+                                <span class="dimension-separator">×</span>
+                                <div class="dimension-input-wrapper">
+                                    <input type="number" id="heightInput" class="dimension-input" value="2000" min="100"
+                                        max="4000" step="100">
+                                    <span class="dimension-label">H</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="option-group">
+                            <label class="option-label">Y Offset</label>
+                            <div class="offset-input-wrapper">
+                                <input type="number" id="yOffsetInput" class="offset-input" value="145" min="0"
+                                    max="500" step="5">
+                                <span class="offset-unit">px</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Vans Tab Content -->
+        <div id="vansTab" class="tab-content">
+            <div class="search-section">
+                <div class="search-box">
+                    <input type="text" id="vansSkuInput" placeholder="Enter Vans SKU (e.g., VN000Y11HFC)"
+                        autocomplete="off">
+                    <button id="vansSearchBtn" class="btn-search">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="M21 21l-4.35-4.35"></path>
+                        </svg>
+                        Search
+                    </button>
+                </div>
+                <p class="search-hint">Try: VN000Y11HFC, VN000D3HY28, VN000EE3BLK</p>
+
+                <!-- Vans Image Options -->
+                <div class="image-options">
+                    <div class="options-row">
+                        <div class="option-group">
+                            <label class="option-label">Download Format</label>
+                            <div class="format-buttons" id="vansFormatButtons">
+                                <button class="format-btn active" data-format="png">PNG</button>
+                                <button class="format-btn" data-format="webp">WebP</button>
+                            </div>
+                        </div>
+                        <div class="option-group">
+                            <label class="option-label">Max Images</label>
+                            <div class="offset-input-wrapper">
+                                <input type="number" id="vansMaxImages" class="offset-input" value="7" min="1" max="20"
+                                    step="1">
+                                <span class="offset-unit">images</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="options-row">
+                        <div class="option-group">
+                            <label class="option-label">Dimensions</label>
+                            <div class="dimension-inputs">
+                                <div class="dimension-input-wrapper">
+                                    <input type="number" id="vansWidthInput" class="dimension-input" value="2000"
+                                        min="100" max="4000" step="100">
+                                    <span class="dimension-label">W</span>
+                                </div>
+                                <span class="dimension-separator">×</span>
+                                <div class="dimension-input-wrapper">
+                                    <input type="number" id="vansHeightInput" class="dimension-input" value="2000"
+                                        min="100" max="4000" step="100">
+                                    <span class="dimension-label">H</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shared UI Elements -->
         <div id="loading" class="loading hidden">
             <div class="spinner"></div>
-            <p>Fetching product data from Nike...</p>
+            <p id="loadingText">Fetching product data...</p>
         </div>
 
         <div id="error" class="error hidden"></div>

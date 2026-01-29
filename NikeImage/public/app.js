@@ -768,42 +768,38 @@ async function copyToClipboard(text, button) {
 
 /**
  * Download a single image
- * Uses canvas approach for Vans (CORS proxy blocked), fetch for Nike
+ * Uses canvas approach for both brands (faster than CORS proxy)
  */
 async function downloadImage(url, index) {
-    // For Vans images, use canvas-based download with selected format
-    if (currentBrand === 'vans') {
-        const format = vansSelectedFormat;
-        const filename = `${currentProduct.styleColor || currentProduct.sku}_${index}.${format}`;
-        try {
-            const blob = await downloadViaCanvas(url, format);
-            if (blob) {
-                saveAs(blob, filename);
-                return;
-            }
-        } catch (err) {
-            console.error('Canvas download failed:', err);
-        }
-        // Fallback: open in new tab for manual save
-        window.open(url, '_blank');
-        return;
-    }
-
-    // For Nike, use CORS proxy with original format
-    const extension = url.includes('.webp') ? 'webp' :
-        url.includes('.png') ? 'png' : 'jpg';
+    const format = currentBrand === 'vans' ? vansSelectedFormat : selectedFormat;
+    const extension = format === 'jpg' ? 'jpg' : format;
     const filename = `${currentProduct.styleColor || currentProduct.sku}_${index}.${extension}`;
 
-    // For Nike, use CORS proxy
     try {
-        const response = await fetch(CORS_PROXY + encodeURIComponent(url));
-        const blob = await response.blob();
-        saveAs(blob, filename);
+        // Use canvas-based download (fast, works when images display in browser)
+        const blob = await downloadViaCanvas(url, format);
+        if (blob) {
+            saveAs(blob, filename);
+            return;
+        }
     } catch (err) {
-        console.error('Download failed:', err);
-        // Fallback: open in new tab
-        window.open(url, '_blank');
+        console.error('Canvas download failed, trying CORS proxy:', err);
     }
+
+    // Fallback to CORS proxy for Nike if canvas fails
+    if (currentBrand === 'nike') {
+        try {
+            const response = await fetch(CORS_PROXY + encodeURIComponent(url));
+            const blob = await response.blob();
+            saveAs(blob, filename);
+            return;
+        } catch (err) {
+            console.error('CORS proxy download failed:', err);
+        }
+    }
+
+    // Final fallback: open in new tab for manual save
+    window.open(url, '_blank');
 }
 
 /**
@@ -857,20 +853,23 @@ async function handleDownloadAll() {
         const zip = new JSZip();
         const folder = zip.folder(currentProduct.styleColor || currentProduct.sku);
 
-        // Fetch all images
+        // Fetch all images using canvas (fast) with CORS proxy fallback
         const fetchPromises = currentProduct.images.map(async (url, index) => {
             try {
-                let extension, blob;
+                const format = currentBrand === 'vans' ? vansSelectedFormat : selectedFormat;
+                const extension = format === 'jpg' ? 'jpg' : format;
+                let blob;
 
-                // Use canvas for Vans with selected format, fetch for Nike
-                if (currentBrand === 'vans') {
-                    extension = vansSelectedFormat;
-                    blob = await downloadViaCanvas(url, extension);
-                } else {
-                    extension = url.includes('.webp') ? 'webp' :
-                        url.includes('.png') ? 'png' : 'jpg';
-                    const response = await fetch(CORS_PROXY + encodeURIComponent(url));
-                    blob = await response.blob();
+                // Try canvas first (fast)
+                try {
+                    blob = await downloadViaCanvas(url, format);
+                } catch (canvasErr) {
+                    console.log(`Canvas failed for image ${index + 1}, trying CORS proxy`);
+                    // Fallback to CORS proxy for Nike
+                    if (currentBrand === 'nike') {
+                        const response = await fetch(CORS_PROXY + encodeURIComponent(url));
+                        blob = await response.blob();
+                    }
                 }
 
                 const filename = `${currentProduct.styleColor || currentProduct.sku}_${index + 1}.${extension}`;

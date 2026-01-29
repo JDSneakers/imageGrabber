@@ -1,5 +1,5 @@
 // Configuration
-const CORS_PROXY = 'https://corsproxy.io/?';
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
 // Current brand state
 let currentBrand = 'nike';
@@ -617,7 +617,7 @@ function formatProductResponse(product, colorway = null) {
         price: formatPrice(product.price, product.currentPrice),
         colorway: colorway?.colorDescription || product.colorDescription || '',
         styleColor: colorway?.styleColor || product.styleColor || '',
-        images: uniqueImages
+        images: transformedImages
     };
 }
 
